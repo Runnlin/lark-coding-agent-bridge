@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { consumeCotEvents, CotClient, CotPublisher, cotBriefToolTitle, finalAnswerOnlyState } from '../../../src/bot/cot.js';
+import {
+  consumeCotEvents,
+  CotClient,
+  CotPublisher,
+  cotBriefToolTitle,
+  finalAnswerOnlyState,
+  projectFinalReplyState,
+} from '../../../src/bot/cot.js';
 import type { AgentEvent } from '../../../src/agent/types.js';
 import type { RunState } from '../../../src/card/run-state.js';
 
@@ -80,6 +87,45 @@ describe('COT event mapping', () => {
       blocks: [{ kind: 'text', content: 'final' }],
       reasoning: { content: '', active: false },
       footer: null,
+    });
+
+    it('keeps only trailing text blocks when deriving the final answer', () => {
+      const state: RunState = {
+        blocks: [
+          { kind: 'text', content: 'progress', streaming: false },
+          { kind: 'tool', tool: { id: 'tool', name: 'command_execution', input: {}, status: 'done' } },
+          { kind: 'text', content: 'final 1', streaming: false },
+          { kind: 'text', content: 'final 2', streaming: true },
+        ],
+        reasoning: { content: 'hidden', active: true },
+        footer: 'streaming',
+        terminal: 'done',
+      };
+
+      expect(finalAnswerOnlyState(state)).toMatchObject({
+        blocks: [
+          { kind: 'text', content: 'final 1' },
+          { kind: 'text', content: 'final 2' },
+        ],
+        reasoning: { content: '', active: false },
+        footer: null,
+      });
+    });
+
+    it('applies the tool-visibility preference before projecting the final reply', () => {
+      const state: RunState = {
+        blocks: [
+          { kind: 'tool', tool: { id: 'tool', name: 'command_execution', input: {}, status: 'done' } },
+          { kind: 'text', content: 'final', streaming: false },
+        ],
+        reasoning: { content: '', active: false },
+        footer: null,
+        terminal: 'done',
+      };
+
+      expect(projectFinalReplyState(state, { showToolCalls: false })).toMatchObject({
+        blocks: [{ kind: 'text', content: 'final' }],
+      });
     });
   });
 

@@ -250,14 +250,27 @@ export class CotPublisher {
 }
 
 export function finalAnswerOnlyState(state: RunState): RunState {
+  const trailingTextBlocks = collectTrailingTextBlocks(state);
   return {
     ...state,
     blocks: state.finalText
       ? [{ kind: 'text', content: state.finalText, streaming: false }]
-      : state.blocks.filter((b) => b.kind === 'text'),
+      : trailingTextBlocks.length > 0
+        ? trailingTextBlocks
+        : state.blocks.filter((b) => b.kind === 'text'),
     reasoning: { content: '', active: false },
     footer: null,
   };
+}
+
+export function projectFinalReplyState(
+  state: RunState,
+  opts: { showToolCalls: boolean },
+): RunState {
+  const projected = opts.showToolCalls
+    ? state
+    : { ...state, blocks: state.blocks.filter((block) => block.kind !== 'tool') };
+  return finalAnswerOnlyState(projected);
 }
 
 export async function consumeCotEvents(
@@ -427,4 +440,15 @@ function truncateCot(value: unknown, max: number): string {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined;
+}
+
+function collectTrailingTextBlocks(state: RunState): RunState['blocks'] {
+  const trailing: RunState['blocks'] = [];
+  for (let i = state.blocks.length - 1; i >= 0; i -= 1) {
+    const block = state.blocks[i];
+    if (!block) continue;
+    if (block.kind !== 'text') break;
+    trailing.unshift({ ...block, streaming: false });
+  }
+  return trailing;
 }

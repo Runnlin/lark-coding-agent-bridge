@@ -69,7 +69,7 @@ import {
   consumeCotEvents,
   CotClient,
   CotPublisher,
-  finalAnswerOnlyState,
+  projectFinalReplyState,
 } from './cot';
 
 const DEBOUNCE_MS = 600;
@@ -952,6 +952,10 @@ async function runAgentBatch(deps: RunBatchDeps): Promise<void> {
     if (getShowToolCalls(controls.cfg)) return state;
     return { ...state, blocks: state.blocks.filter((b) => b.kind !== 'tool') };
   };
+  const finalReplyState = (state: RunState): RunState =>
+    projectFinalReplyState(state, {
+      showToolCalls: getShowToolCalls(controls.cfg),
+    });
   const cardRenderOptions = callbackAuth
     ? {
         signCallback: (action: string) =>
@@ -1015,7 +1019,7 @@ async function runAgentBatch(deps: RunBatchDeps): Promise<void> {
           channel,
           chatId,
           scope,
-          state: finalAnswerOnlyState(finalState),
+          state: finalReplyState(finalState),
           replyMode,
           sendOpts,
           cardRenderOptions,
@@ -1085,7 +1089,7 @@ async function runAgentBatch(deps: RunBatchDeps): Promise<void> {
           channel,
           chatId,
           scope,
-          state: finalAnswerOnlyState(filterForPrefs(latestState)),
+          state: finalReplyState(latestState),
           replyMode,
           sendOpts,
           cardRenderOptions,
@@ -1144,7 +1148,7 @@ async function runAgentBatch(deps: RunBatchDeps): Promise<void> {
           channel,
           chatId,
           scope,
-          state: finalAnswerOnlyState(filterForPrefs(latestState)),
+          state: finalReplyState(latestState),
           replyMode,
           sendOpts,
           cardRenderOptions,
@@ -1166,10 +1170,9 @@ async function runAgentBatch(deps: RunBatchDeps): Promise<void> {
         channel,
         chatId,
         scope,
-        state:
-          controls.profileConfig.agentKind === 'codex'
-            ? finalAnswerOnlyState(filterForPrefs(finalState))
-            : filterForPrefs(finalState),
+        state: controls.profileConfig.agentKind === 'codex'
+          ? finalReplyState(finalState)
+          : filterForPrefs(finalState),
         replyMode,
         sendOpts,
         cardRenderOptions,
