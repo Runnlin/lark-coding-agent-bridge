@@ -445,10 +445,9 @@ function stringValue(value: unknown): string | undefined {
 function collectTrailingTextBlocks(state: RunState): RunState['blocks'] {
   const trailing: RunState['blocks'] = [];
   for (let i = state.blocks.length - 1; i >= 0; i -= 1) {
-    const block = state.blocks[i];
-    if (!block) continue;
+    const block = state.blocks[i]!;
     if (block.kind !== 'text') break;
-    trailing.unshift({ ...block, streaming: false });
+    trailing.push({ ...block, streaming: false });
   }
-  return trailing;
+  return trailing.reverse();
 }
