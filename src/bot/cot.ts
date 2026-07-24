@@ -448,7 +448,7 @@ function collectTrailingTextBlocks(state: RunState): RunState['blocks'] {
     if (block.kind !== 'text') break;
     // Final projected replies are terminal snapshots, so trailing text blocks
     // should never keep a streaming marker.
-    trailing.push({ ...block, streaming: false });
+    trailing.push({ kind: 'text', content: block.content, streaming: false });
   }
   return trailing.reverse();
 }
